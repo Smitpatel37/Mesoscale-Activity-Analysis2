@@ -1,2 +1,6 @@
 Results
 *.nwb
+*.pkl
+*.mat
+
+
