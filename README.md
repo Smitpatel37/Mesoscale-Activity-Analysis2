@@ -1,2 +1,3 @@
 # Mesoscale-Activity-Analysis
- 
+ RUN THE FILES IN FOLLOWING ORDER TO UNDERSTAND THE FLOW OF THE PROJECT.
+ Scripts/
