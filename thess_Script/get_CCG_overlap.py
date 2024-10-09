@@ -47,7 +47,7 @@ def calculate_tau(lags, autocorr):
     """Fit the exponential decay with offset to autocorrelation data and return tau (intrinsic timescale)."""
 
     # Fit exponential decay with offset to the autocorrelation data
-    popt, _ = curve_fit(exponential_decay_with_offset, lags, autocorr, p0=(1000,1,20))
+    popt, _ = curve_fit(exponential_decay_with_offset, lags, autocorr, p0=(1000,0.1,20))
 
     # Extract the intrinsic timescale (tau) and offset (B)
     A, tau_c, B = popt
@@ -169,7 +169,7 @@ def get_allpeaks(regions,*params):
                                 plt.plot(0.01*np.arange(-11, 10),corr_vec[:,i,j])
                                 plt.plot(lags, exponential_decay_with_offset(lags, A, tau_c, B), color='red')
                                 plt.xlim(-0.1,0.1)
-                                plt.title(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j))
+                                plt.title(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j)+" Tau = "+str(tau_c))
                                 plt.figure()
                                 all_A.append(A)
                                 all_B.append(B)
@@ -177,7 +177,8 @@ def get_allpeaks(regions,*params):
                             except (RuntimeError, ValueError) as e:
                                 print("Error during curve fitting:", e)
                                 print("Skipping this fit...")
-                            
+                                
+                    break
                 
                     # sel_pre, sel_post, efficacy = np.transpose(peak_sel_alltrials)
                     # all_sel_pre = np.hstack([all_sel_pre, sel_pre])
