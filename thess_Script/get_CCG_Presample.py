@@ -156,7 +156,7 @@ def get_allpeaks(regions,*params):
                     print("load CCG sub"+str(sub_id)+" ses "+str(session)+"complete")
                     timevec, spikevec_ALM, spikevec_Thal, sel_vec_cx, sel_vec_th, ALM_FR, Thal_FR  = gcg.spikestosel(spikes_seg[regions[0]], spikes_seg[regions[1]], 'all', stats, hemi, 0.05)      
                     
-                    print('shape of CCG'+str(np.shape(corr_vec)))
+                    #print('shape of CCG'+str(np.shape(corr_vec)))
                     
                     ccgs_norm = gcg.CCG_norm(corr_vec, filt_time, ALM_FR, Thal_FR, norm)
                     peakindices_alltrials, ccgwithpeak_alltrials, allpeaks_alltrials, peak_sel_alltrials, allcounters_alltrials = gcg.peak_filt(dt, filt_time, ccgs_norm, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,peak_th, 0.015, peakstrength)        
@@ -164,26 +164,23 @@ def get_allpeaks(regions,*params):
                     peak_cx_idx = [subarray[0] for subarray in peakindices_alltrials]
                     peak_thal_idx = [subarray[1] for subarray in peakindices_alltrials]
                     for i in peak_cx_idx:
-                        for j in peak_thal_idx:
-                            j=i   #Uncomment this For AUTO-CCG
-                            if(max(corr_vec[:,i,j])>9):
-                                try:
-                                    # lags = np.arange(1, int((np.shape(corr_vec)[0]/2) + 1)) * 0.01
-                                    # A, tau_c, B = calculate_tau(lags, corr_vec[ int( (np.shape(corr_vec)[0]/2) + 2):,i,j] )
-                                    plt.plot(0.01*np.arange(-11,10),corr_vec[:,i,j])
-                                    # plt.plot(lags, exponential_decay_with_offset(lags, A, tau_c, B), color='red')
-                                    plt.xlim(-0.1,0.1)
-                                    plt.title(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j)) #+" Tau = "+str(tau_c))
-                                    plt.figure()
-                                    # all_A.append(A)
-                                    # all_B.append(B)
-                                    # all_tau.append(tau_c)
-                                except (RuntimeError, ValueError) as e:
-                                    print("Error during curve fitting:", e)
-                                    print("Skipping this fit...")
-                                
-                    break
-                
+                        j=i   #Uncomment this For AUTO-CCG
+                        if(max(corr_vec[:,i,j])>9):
+                            try:
+                                lags = np.arange(1, int((np.shape(corr_vec)[0]//2))) * 0.01
+                                A, tau_c, B = calculate_tau(lags, corr_vec[ int( (np.shape(corr_vec)[0]//2) + 2):,i,j] )
+                                plt.plot(0.01*np.arange(-11,10),corr_vec[:,i,j])
+                                plt.plot(lags, exponential_decay_with_offset(lags, A, tau_c, B), color='red')
+                                plt.xlim(-0.1,0.1)
+                                plt.title(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j)+" Tau = "+str(tau_c))
+                                plt.figure()
+                                all_A.append(A)
+                                all_B.append(B)
+                                all_tau.append(tau_c)
+                            except (RuntimeError, ValueError) as e:
+                                print("Error during curve fitting:", e)
+                                print("Skipping this fit...")
+                        #break
                     # sel_pre, sel_post, efficacy = np.transpose(peak_sel_alltrials)
                     # all_sel_pre = np.hstack([all_sel_pre, sel_pre])
                     # all_sel_post = np.hstack([all_sel_post, sel_post])
