@@ -15,6 +15,7 @@ import seaborn as sns
 import os
 from scipy.optimize import curve_fit
 import get_CCG_functions as gcg
+from jitter import jitter
 ##### IMPORT files from jupyter notebook/NWB
 
 os.chdir('D:/Mesoscale-Activity-Analysis/NWBdata')
@@ -30,9 +31,9 @@ def load_onesession(sub_index, session_index):
     """
     sub_id = 455219
     session_id = [20190806143015, 20190807134913, 20190808140448,20190805152117]
-    with open('sub-'+str(sub_id)+'/unitsALM_notrials'+'sub-'+str(sub_id)+'_ses-'+str(session_id[session_index])+'_Pre_Allunits.pkl', 'rb') as f:  # open a text file
+    with open('sub-'+str(sub_id)+'/unitsALM_notrials'+'sub-'+str(sub_id)+'_ses-'+str(session_id[session_index])+'_alloverlappedunits.pkl', 'rb') as f:  # open a text file
         allspikes_ALM = pickle.load(f) # 
-    with open('sub-'+str(sub_id)+'/unitsALM_withtrials'+'sub-'+str(sub_id)+'_ses-'+str(session_id[session_index])+'_Pre_Allunits.pkl', 'rb') as f:  # open a text file
+    with open('sub-'+str(sub_id)+'/unitsALM_withtrials'+'sub-'+str(sub_id)+'_ses-'+str(session_id[session_index])+'_alloverlappedunits.pkl', 'rb') as f:  # open a text file
         allunits_ALM = pickle.load(f) # 
     with open('sub-'+str(sub_id)+'/session'+str(session_id[session_index])+'_sub'+str(sub_id)+'_stats.pkl', 'rb') as f: 
         stats = pickle.load(f)    
@@ -68,8 +69,8 @@ def get_allCCG(regions):#p
                 os.chdir(path+'/'+dir1+'/analysis')
                 print
                 spikes_pooled = {}
-                file0 = regions[0] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_Pre_Allunits.pkl'
-                file1 = regions[1] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_Pre_Allunits.pkl'
+                file0 = regions[0] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
+                file1 = regions[1] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
                 if os.path.isfile(file0)==True and os.path.isfile(file1)==True :
                     print('\nsession '+ (sub_id+session)+' crosscorrelation between ' +regions[0]+ ' and '+ regions[1])
                     with open(file0, 'rb') as f:  # open a text file
@@ -78,15 +79,45 @@ def get_allCCG(regions):#p
                         spikes_pooled[regions[1]] = pickle.load(f) # # 
                     sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
                     corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
-                    with open('CCG'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'Pre_Allunits.pkl', 'wb') as f:  # open a text file
+                    with open('CCG'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'wb') as f:  # open a text file
                         pickle.dump(corr_vec, f) # 
                     print('File saved : CCG overlap '+sub_id+session)
                     del corr_vec
                 else:
                     print('session '+ (sub_id+session)+' does not have'+regions[0]+ ' and '+ regions[1])
                     
-        
-
+def Cal_jitter(regions):
+    path = 'D:/Mesoscale-Activity-Analysis/NWBdata/'
+    os.chdir(path)
+    for dir1 in ['sub-480135']:
+        if not dir1.startswith('.'):
+            sessions = gcg.get_sessions(path, dir1)
+            sub_id = dir1[4:]
+            for session in sessions: ### loops over sessions within a subdirectory 
+                os.chdir(path+'/'+dir1+'/analysis')
+                print('.')
+                spikes_pooled = {}
+                file0 = regions[0] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
+                file1 = regions[1] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
+                if os.path.isfile(file0)==True and os.path.isfile(file1)==True:
+                    print('\nsession '+ (sub_id+session)+' crosscorrelation between ' +regions[0]+ ' and '+ regions[1])
+                    with open(file0, 'rb') as f:  # open a text file
+                        spikes_pooled[regions[0]] = pickle.load(f) # # 
+                    with open(file1, 'rb') as f:  # open a text file
+                        spikes_pooled[regions[1]] = pickle.load(f)
+                    
+                    spikes_pooled[regions[0]] = jitter(spikes_pooled[regions[0]])
+                    spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]])
+                    sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
+                    corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
+                    with open('CCG_25msjitter'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'wb') as f:  # open a text file
+                        pickle.dump(corr_vec, f) # 
+                    print('File saved : CCG jitter overlap '+sub_id+session)
+                    del corr_vec
+                else:
+                    print('session '+ (sub_id+session)+' does not have'+regions[0]+ ' and '+ regions[1])
+                    
+                    
 def get_allpeaks(regions,*params):
     '''
     Calculates the peaks of the crosscorrelation function
@@ -109,10 +140,9 @@ def get_allpeaks(regions,*params):
     peak_th, norm, peakstrength, strict_contraipsi = params
     ### crosscorrelation parameters
     dt = 0.01
-    maxlag = 200e-3
+    maxlag = 100e-3
     Nlag = int(maxlag/dt)
     filt_time = dt*np.arange(-Nlag-1, Nlag)
-    #print(filt_time)
     ### variable initialization
     all_contrapeaks = []
     all_ipsipeaks = []
@@ -132,7 +162,7 @@ def get_allpeaks(regions,*params):
     if alldirectories =='yes':
        directories = os.listdir(path)
     else:
-        directories = ['sub-455219', 'sub-456772']
+        directories = ['sub-456772']
     for dir1 in directories:
         if not dir1.startswith('.'):
             sessions = gcg.get_sessions(path, dir1)
@@ -140,8 +170,8 @@ def get_allpeaks(regions,*params):
             for session in sessions: ### loops over sessions within a subdirectory 
                 os.chdir(path+'/'+dir1+'/analysis')
                 spikes_seg = {}
-                file0 = regions[0] +'_withtrials'+'sub-'+str(sub_id)+'_'+str(session)+'_Pre_Allunits.pkl'
-                file1 = regions[1] +'_withtrials'+'sub-'+str(sub_id)+'_'+str(session)+'_Pre_Allunits.pkl'
+                file0 = regions[0] +'_withtrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
+                file1 = regions[1] +'_withtrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
                 hemi = regions[0][0:4]
                 if os.path.isfile(file0)==True and os.path.isfile(file1)==True :
                     print('session '+ (sub_id+session)+' crosscorrelation between ' +regions[0]+ ' and '+ regions[1])
@@ -151,25 +181,23 @@ def get_allpeaks(regions,*params):
                         spikes_seg[regions[1]] = pickle.load(f) # # 
                     with open('session'+str(session)[4:]+'_sub'+str(sub_id)+'_stats.pkl', 'rb') as f: 
                         stats= pickle.load(f) 
-                    with open('CCG'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'Pre_Allunits.pkl', 'rb') as f:  # open a text file
+                    with open('CCG'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'rb') as f:  # open a text file
                         corr_vec = pickle.load(f)
                     print("load CCG sub"+str(sub_id)+" ses "+str(session)+"complete")
                     timevec, spikevec_ALM, spikevec_Thal, sel_vec_cx, sel_vec_th, ALM_FR, Thal_FR  = gcg.spikestosel(spikes_seg[regions[0]], spikes_seg[regions[1]], 'all', stats, hemi, 0.05)      
-                    
-                    #print('shape of CCG'+str(np.shape(corr_vec)))
-                    
+                    #print(np.shape(corr_vec))
                     ccgs_norm = gcg.CCG_norm(corr_vec, filt_time, ALM_FR, Thal_FR, norm)
                     peakindices_alltrials, ccgwithpeak_alltrials, allpeaks_alltrials, peak_sel_alltrials, allcounters_alltrials = gcg.peak_filt(dt, filt_time, ccgs_norm, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,peak_th, 0.015, peakstrength)        
 
                     peak_cx_idx = [subarray[0] for subarray in peakindices_alltrials]
                     peak_thal_idx = [subarray[1] for subarray in peakindices_alltrials]
                     for i in peak_cx_idx:
-                        j=i   #Uncomment this For AUTO-CCG
+                        j=i
                         if(max(corr_vec[:,i,j])>9):
                             try:
-                                lags = np.arange(1, int((np.shape(corr_vec)[0]//2))) * 0.01
-                                A, tau_c, B = calculate_tau(lags, corr_vec[ int( (np.shape(corr_vec)[0]//2) + 2):,i,j] )
-                                plt.plot(0.01*np.arange(-11,10),corr_vec[:,i,j])
+                                lags = np.arange(1, len(corr_vec[11:,i,j])) * 0.01
+                                A, tau_c, B = calculate_tau(lags, corr_vec[12:,i,j])
+                                plt.plot(0.01*np.arange(-11, 10),corr_vec[:,i,j])
                                 plt.plot(lags, exponential_decay_with_offset(lags, A, tau_c, B), color='red')
                                 plt.xlim(-0.1,0.1)
                                 plt.title(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j)+" Tau = "+str(tau_c))
@@ -180,7 +208,9 @@ def get_allpeaks(regions,*params):
                             except (RuntimeError, ValueError) as e:
                                 print("Error during curve fitting:", e)
                                 print("Skipping this fit...")
-                        #break
+                                
+                    break
+                
                     # sel_pre, sel_post, efficacy = np.transpose(peak_sel_alltrials)
                     # all_sel_pre = np.hstack([all_sel_pre, sel_pre])
                     # all_sel_post = np.hstack([all_sel_post, sel_post])
@@ -208,8 +238,8 @@ def get_allpeaks(regions,*params):
 params = [6,"both", "integral", 0 ]#peak_th, norm, peak_strength, strict_contraipsi = params
 #all_contrapeaks, all_ipsipeaks, all_nonselpeaks = get_allpeaks(*params)
 
-
-#get_allCCG(['left ALM', 'left Thalamus'])
+Cal_jitter(['left ALM', 'left Thalamus'])
+#get_allCCG(['left Thalamus', 'left Thalamus'])
 # all_contrapeaks_L, all_ipsipeaks_L, all_nonselpeaks_L, all_sel_pre, all_sel_post, all_efficacy = get_allpeaks(['left ALM', 'left ALM'], *params)
 '''all_contrapeaks_R, all_ipsipeaks_R, all_nonselpeaks_R = get_allpeaks(['right ALM', 'right ALM'], *params)
 all_contrapeaks = np.hstack([all_contrapeaks_R,all_contrapeaks_L])
@@ -221,11 +251,11 @@ binwidth = 5
 plt.hist(all_contrapeaks, bins=np.arange(min(all_contrapeaks), max(all_contrapeaks) + binwidth, binwidth), color = 'steelblue')    
 plt.hist(all_ipsipeaks, bins=np.arange(min(all_ipsipeaks), max(all_ipsipeaks) + binwidth, binwidth), color='red')
 '''
-get_allpeaks(['left Thalamus', 'left Thalamus'], *params)
+# get_allpeaks(['left Thalamus', 'left Thalamus'], *params)
 
-plt.hist(all_tau,bins=30)
-#plt.hist(all_A,bins=30)
-#plt.hist(all_B,bins=30)
+# plt.hist(all_tau,bins=30)
+# plt.hist(all_A,bins=30)
+# plt.hist(all_B,bins=30)
 '''
 ==>  Change by jorge for Autocorrelograms
 
