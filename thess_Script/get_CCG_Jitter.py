@@ -54,42 +54,11 @@ def calculate_tau(lags, autocorr):
     A, tau_c, B = popt
     return A, tau_c, B
 
-def get_allCCG(regions):#p
-    '''
-    
-    regions is a list of two strings that define the cross correlation e.g., ['left ALM', 'left ALM']
-            '''
-    path = 'D:/Mesoscale-Activity-Analysis/NWBdata/'
-    os.chdir(path)
-    for dir1 in os.listdir():
-        if not dir1.startswith('.'):
-            sessions = gcg.get_sessions(path, dir1)
-            sub_id = dir1[4:]
-            for session in sessions: ### loops over sessions within a subdirectory 
-                os.chdir(path+'/'+dir1+'/analysis')
-                print
-                spikes_pooled = {}
-                file0 = regions[0] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
-                file1 = regions[1] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
-                if os.path.isfile(file0)==True and os.path.isfile(file1)==True :
-                    print('\nsession '+ (sub_id+session)+' crosscorrelation between ' +regions[0]+ ' and '+ regions[1])
-                    with open(file0, 'rb') as f:  # open a text file
-                        spikes_pooled[regions[0]] = pickle.load(f) # # 
-                    with open(file1, 'rb') as f:  # open a text file
-                        spikes_pooled[regions[1]] = pickle.load(f) # # 
-                    sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
-                    corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
-                    with open('CCG'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'wb') as f:  # open a text file
-                        pickle.dump(corr_vec, f) # 
-                    print('File saved : CCG overlap '+sub_id+session)
-                    del corr_vec
-                else:
-                    print('session '+ (sub_id+session)+' does not have'+regions[0]+ ' and '+ regions[1])
-                    
+                   
 def Cal_jitter(regions):
     path = 'D:/Mesoscale-Activity-Analysis/NWBdata/'
     os.chdir(path)
-    for dir1 in ['sub-480135']:
+    for dir1 in os.listdir():
         if not dir1.startswith('.'):
             sessions = gcg.get_sessions(path, dir1)
             sub_id = dir1[4:]
@@ -139,7 +108,7 @@ def get_allpeaks(regions,*params):
     ###load parameters
     peak_th, norm, peakstrength, strict_contraipsi = params
     ### crosscorrelation parameters
-    dt = 0.01
+    dt = 0.001
     maxlag = 100e-3
     Nlag = int(maxlag/dt)
     filt_time = dt*np.arange(-Nlag-1, Nlag)
