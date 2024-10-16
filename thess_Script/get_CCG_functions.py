@@ -68,7 +68,7 @@ def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,ALM_FR, Thal_
     ccgwithpeak = []
     peakindices = []
     FR_th = 1.5
-    peakwidth = 0.05 #in units of binsize
+    peakwidth = 0.025 #in units of binsize
     peak_sel = []
     contra_peaks = []
     ipsi_peaks =  []
@@ -148,7 +148,7 @@ def getsparseformat(allspikes):
     returns binarized vectors, to be transformed to a sparse matrix with csr_matrix
     '''
     
-    binsize = 0.001   # 1/100 , 10ms
+    binsize = 0.0005  # 1/2000 , 0.5 ms
     rows_vec=[]
     col_vec=[]
     array_vec=[]
@@ -160,7 +160,7 @@ def getsparseformat(allspikes):
         
 def getsparsematrix(spikes1, spikes2):
     from scipy.sparse import csr_matrix
-    binsize = 0.001    
+    binsize = 0.0005    
     rows_vec, col_vec, array_vec = getsparseformat(spikes1)
     rows_vec_th, col_vec_th, array_vec_th = getsparseformat(spikes2)
     timevec = np.arange(0,max(np.max(array_vec), np.max(array_vec_th)),binsize)
@@ -178,7 +178,7 @@ def cross_corr_sam(sparse, sparse_th):
     N_th = np.shape(datamatrix_th)[1]
     T = np.shape(datamatrix_cx)[0]
 
-    dt = 0.001
+    dt = 0.0005
     maxlag = 100e-3
     Nlag = int(maxlag/dt)
     #lags = 2*Nlag+1#dt*range(-Nlag, Nlag)
