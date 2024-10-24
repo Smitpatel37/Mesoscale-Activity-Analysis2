@@ -13,48 +13,41 @@ import scipy
 
 import numpy as np
 
-def jitter(spike_times, window_size=0.025):
-    randomized_spike_times = []
+def jitter(spike_times_2d, window_size=20):
+    """
+    Jitters a spike data series within specified windows.
 
-    # Iterate over each neuron's spike data (each row in the 2D spike_times array)
-    for neuron_spikes in spike_times:
-        # Initialize list to store randomized spike times for the current neuron
-        randomized_neuron_spikes = []
+    Args:
+        spike_times: A 2D NumPy array containing arrays of spike times (in milliseconds).
+        window_size: The size of each jitter window in milliseconds.
+
+    Returns:
+        A 1D NumPy array containing the jittered spike times.
+    """
+
+    all_jittered = []
+
+    # Iterate over each row in the 2D array
+    for spike_times in spike_times_2d:
+        jittered_spike_times = np.copy(spike_times)
+        jitt = []
+
+        window_times = np.arange(0, max(spike_times), window_size)
         
-        current_window_start = 0.0  # Start of the window
-        current_window_end = window_size
+        # Iterate through windows based on spike times
+        for start_time in window_times:
+            end_time = start_time + window_size
+            window_data = jittered_spike_times[(spike_times >= start_time) & (spike_times < end_time)]
+            
+            window_data = np.sort(window_data)
+            
+            # Shuffle the window data while ensuring it stays within the window
+            for i in range(len(window_data)):
+                jitt.append(start_time + np.random.uniform(0, window_size))
         
-        # List to hold spikes in the current window
-        spikes_in_window = []
-    
-        # Iterate through spike times for the current neuron and divide into windows
-        for spike_time in neuron_spikes:
-            # If the spike exceeds the current window, generate new random spikes for the window
-            if spike_time > current_window_end:
-                # Generate the same number of random spikes within the current window
-                num_spikes = len(spikes_in_window)
-                if num_spikes > 0:
-                    new_spikes = np.sort(np.random.uniform(current_window_start, current_window_end, num_spikes))
-                    randomized_neuron_spikes.extend(new_spikes)
-                
-                # Move to the next window
-                current_window_start = current_window_end
-                current_window_end += window_size
-                
-                # Reset spikes_in_window and start collecting spikes for the new window
-                spikes_in_window = []
-    
-            # Add the current spike to the current window
-            spikes_in_window.append(spike_time)
-    
-        # For the last window, randomize the remaining spikes
-        if spikes_in_window:
-            num_spikes = len(spikes_in_window)
-            new_spikes = np.sort(np.random.uniform(current_window_start, current_window_end, num_spikes))
-            randomized_neuron_spikes.extend(new_spikes)
-        
-        # Append randomized spike times for this neuron to the result list
-        randomized_spike_times.append(np.array(randomized_neuron_spikes))
-  
-    return randomized_spike_times
+        # Append the sorted jittered data for this row to the list
+        all_jittered.append(np.array(np.sort(jitt)))
+
+    # Convert the list of jittered spike times back to a 2D NumPy array
+    return np.array(all_jittered)
 
