@@ -31,7 +31,8 @@ def get_sessions(path, dir1):
             sessions +=[session_id]
     return sessions
 
-def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,std_th, time_th, peakstrength):
+
+def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,CCF_allregions0, CCF_allregions1, ALM_FR, Thal_FR,std_th, session, time_th, peakstrength):
     '''
     
 
@@ -63,12 +64,16 @@ def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,ALM_FR, Thal_
     
     numcx = np.shape(filt_vec)[1]
     numth = np.shape(filt_vec)[2]
-    #print(numcx)
-    #print(numth)
+    listcx = CCF_allregions0
+    listth = CCF_allregions1
+    #print('listcxshape', np.shape(listcx))
+    #print(listcx)
     ccgwithpeak = []
     peakindices = []
-    FR_th = 1.5
-    peakwidth = 0.05 #in units of binsize
+    CCF = []
+
+    FR_th = 1
+    peakwidth = int(50) #in units of binsize
     peak_sel = []
     contra_peaks = []
     ipsi_peaks =  []
@@ -85,29 +90,50 @@ def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,ALM_FR, Thal_
     peaks_contranon = []
     counter_nonnon = 0
     peaks_nonnon= []
+    all_sessions = []
 
     for i in range(0, numcx):#range(0,nrows):
         for j in range(0, numth):#range(0,ncolumns):
             #filt = filt_vec[i,j,:]
-            filt = filt_vec[:, i,j]-np.mean(filt_vec[:, i,j])
-            filtstd = np.std(filt[(filt_time>-0.02)*(filt_time<0.02)])            #[-20,20]ms
-            peakCCG = np.max(filt-np.mean(filt[(filt_time>-0.1)*(filt_time<0.1)])) #100ms
+            CCG = filt_vec[:, i,j]-np.mean(filt_vec[:, i,j])
+            filt = CCG#
+            #filt = butter_bandpass_filter(CCG, 30, 700, 1/binsize, order=3)
+            #filt = butter_highpass_filter(CCG, 100,1/binsize)
+
+            filtstd = np.std(filt[(filt_time>-0.02)*(filt_time<0.02)])            
+            peakCCG = np.max(filt-np.mean(filt[(filt_time>-0.1)*(filt_time<0.1)]))
+            minCCG = np.min(filt-np.mean(filt[(filt_time>-0.1)*(filt_time<0.1)]))
+            rangeCCG = peakCCG-minCCG
             argpeak = np.argmax(filt-np.mean(filt))
             if ALM_FR[i]>FR_th and Thal_FR[j]>FR_th:
-                if peakCCG>std_th*filtstd:                  
-                    if np.abs(filt_time[argpeak])<time_th and np.abs(filt_time[argpeak])>0.0005:
-                        #print(argpeak)
-                        range_int = range(int(argpeak-peakwidth/2), int(argpeak+peakwidth/2))
+                argmaxtest = np.argmax(filt)
+                argument = range(argmaxtest-10, argmaxtest+10)
+                if np.abs(filt_time[argmaxtest])<0.01:
+                    integral = integrate.trapz(filt[argument], dx = binsize)
+                else:
+                    integral=0
+                #print(np.abs(filt_time[argmaxtest]))   
+                #print('integral', integral)
+                #print('rangeCCG', rangeCCG)
+                if integral>0.007 and rangeCCG>5 and peakCCG>std_th*filtstd:#peakCCG>std_th*filtstd:                  
+                   if np.abs(filt_time[argpeak])<time_th and np.abs(filt_time[argpeak])>0.0005:
+                        print('went in') 
+                       #print(argpeak)
+                        #range_int = range(int(argpeak-peakwidth/2), int(argpeak+peakwidth/2))
                         #print(range_int)
-                        integral = integrate.trapz(filt[range_int]-np.mean(filt), dx = binsize)
+                        #integral = integrate.trapz(filt[range_int]-np.mean(filt), dx = binsize)
                         #print('peaksunit i,j', i,j)
-                        ccgwithpeak.append(filt)
+                        ccgwithpeak.append(CCG)
                         if peakstrength=="amp":
                             peakfilt = peakCCG
                         elif peakstrength=="integral":
                             peakfilt = integral#integral#peakfilt#[peakfilt,filt_time[argpeak]]
-                        peakindices.append([i,j,sel_vec_cx[i], sel_vec_th[j], peakfilt,filt_time[argpeak] , ALM_FR[i], Thal_FR[j]])
-                        peak_sel.append([sel_vec_cx[i][1], sel_vec_th[j][1], peakfilt])
+                        #peakindices.append([i,j,sel_vec_cx[i], sel_vec_th[j], listcx[i], listth[j], peakfilt,filt_time[argpeak] , ALM_FR[i], Thal_FR[j]])
+                        peakindices.append([listcx[i][0], listth[j][0]])
+                        CCF.append([listcx[i][1], listth[j][1]])
+                        all_sessions.append(session)
+
+                        peak_sel.append([sel_vec_cx[i], sel_vec_th[j], peakfilt])
                         if sel_vec_cx[i][0]=='contra' and sel_vec_th[j][0]=='contra':
                             counter_contracontra+=1
                             peaks_contracontra.append(peakfilt)
@@ -138,7 +164,127 @@ def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,ALM_FR, Thal_
     nonsel_peaks = np.array(nonsel_peaks)  
     allcounters = [counter_contracontra, counter_ipsiipsi, counter_mixed, counter_contranon, counter_ipsinon, counter_nonnon]
     allpeaks =  {'peaks_contracontra':peaks_contracontra, 'peaks_ipsiipsi':peaks_ipsiipsi, 'peaks_mixed':peaks_mixed,'peaks_contranon': peaks_contranon, 'peaks_ipsinon':peaks_ipsinon, 'peaks_nonnon':peaks_nonnon}
-    return peakindices, ccgwithpeak, allpeaks, peak_sel, allcounters
+    return peakindices, CCF, ccgwithpeak, allpeaks, peak_sel, allcounters, all_sessions
+# def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,std_th, time_th, peakstrength):
+#     '''
+    
+
+#     Parameters
+#     ----------
+#     binsize : self explanatory
+#     filt_time : time vector to plot CCG
+#     filt_vec : cross correlogram CCG
+#     sel_vec_cx : vector of selectivities for cortical neurons
+#     sel_vec_th : vector of selectivities for thalamic neurons
+#     ALM_FR : ALM units firing rate
+#     Thal_FR : Thal units firing rate
+#     std_th : Standard deviation threshold in CCG to capture a peak 
+#     time_th : time below which peaks are considered
+#     case : way to interpret thalamocortical connectionscontra-contra, etc. (thal_only, cx_only, both, either)
+
+#     Returns
+#     -------
+#     peakindices : [i,j,sel_vec_cx[i], sel_vec_th[j], peakfilt,filt_time[argpeak] , ALM_FR[i], Thal_FR[j]])
+#     peak_sel: [sel_vec_cx[i][0], sel_vec_th[j][0], peakfilt])
+  
+#     ccgwithpeak : 
+#     contra_peaks : synaptic weights for contra connections
+#     ipsi_peaks : synaptic weights for ipsi connections
+#     nonsel_peaks : synaptic weights for non-selective connections
+
+#     '''
+    
+    
+#     numcx = np.shape(filt_vec)[1]
+#     numth = np.shape(filt_vec)[2]
+#     #print(numcx)
+#     #print(numth)
+#     ccgwithpeak = []
+#     peakindices = []
+#     FR_th = 1.5
+#     peakwidth = 0.025 #in units of binsize
+#     peak_sel = []
+#     contra_peaks = []
+#     ipsi_peaks =  []
+#     nonsel_peaks = []
+#     counter_contracontra =0
+#     peaks_contracontra = []
+#     counter_ipsiipsi = 0
+#     peaks_ipsiipsi = []
+#     counter_mixed= 0
+#     peaks_mixed = []
+#     counter_ipsinon =0 
+#     peaks_ipsinon = []
+#     counter_contranon =0
+#     peaks_contranon = []
+#     counter_nonnon = 0
+#     peaks_nonnon= []
+
+#     for i in range(0, numcx):#range(0,nrows):
+#         for j in range(0, numth):#range(0,ncolumns):
+#             #filt = filt_vec[i,j,:]
+#             CCG = filt_vec[:, i,j]-np.mean(filt_vec[:, i,j])
+#             filt = CCG#
+#             filtstd = np.std(filt[(filt_time>-0.02)*(filt_time<0.02)])            
+#             peakCCG = np.max(filt-np.mean(filt[(filt_time>-0.1)*(filt_time<0.1)]))
+#             minCCG = np.min(filt-np.mean(filt[(filt_time>-0.1)*(filt_time<0.1)]))
+#             rangeCCG = peakCCG-minCCG
+#             argpeak = np.argmax(filt-np.mean(filt))
+#             if ALM_FR[i]>FR_th and Thal_FR[j]>FR_th:
+#                 argmaxtest = np.argmax(filt)
+#                 argument = range(argmaxtest-10, argmaxtest+10)
+#                 if np.abs(filt_time[argmaxtest])<0.01:
+#                     integral = integrate.trapz(filt[argument], dx = binsize)
+#                 else:
+#                     integral=0
+#                 #print(np.abs(filt_time[argmaxtest]))   
+#                 #print('integral', integral)
+#                 #print('rangeCCG', rangeCCG)
+#                 if integral>0.007 and rangeCCG>5 and peakCCG>std_th*filtstd:#peakCCG>std_th*filtstd:                  
+#                    if np.abs(filt_time[argpeak])<time_th and np.abs(filt_time[argpeak])>0.0005:
+#                         #print(argpeak)
+#                         range_int = range(int(argpeak-peakwidth/2), int(argpeak+peakwidth/2))
+#                         #print(range_int)
+#                         integral = integrate.trapz(filt[range_int]-np.mean(filt), dx = binsize)
+#                         #print('peaksunit i,j', i,j)
+#                         ccgwithpeak.append(filt)
+#                         if peakstrength=="amp":
+#                             peakfilt = peakCCG
+#                         elif peakstrength=="integral":
+#                             peakfilt = integral#integral#peakfilt#[peakfilt,filt_time[argpeak]]
+#                         peakindices.append([i,j,sel_vec_cx[i], sel_vec_th[j], peakfilt,filt_time[argpeak] , ALM_FR[i], Thal_FR[j]])
+#                         peak_sel.append([sel_vec_cx[i][1], sel_vec_th[j][1], peakfilt])
+#                         if sel_vec_cx[i][0]=='contra' and sel_vec_th[j][0]=='contra':
+#                             counter_contracontra+=1
+#                             peaks_contracontra.append(peakfilt)
+#                         if sel_vec_cx[i][0]=='ipsi' and sel_vec_th[j][0]=='ipsi':
+#                             counter_ipsiipsi+=1
+#                             peaks_ipsiipsi.append(peakfilt)
+
+#                         if (sel_vec_cx[i][0]=='ipsi' and sel_vec_th[j][0]=='contra') or (sel_vec_cx[i][0]=='contra' and sel_vec_th[j][0]=='ipsi') :
+#                             counter_mixed+=1
+#                             peaks_mixed.append(peakfilt)
+
+#                         if (sel_vec_cx[i][0]=='ipsi' and sel_vec_th[j][0]=='non-sel') or (sel_vec_cx[i][0]=='non-sel' and sel_vec_th[j][0]=='ipsi') :
+#                               counter_ipsinon+=1
+#                               peaks_ipsinon.append(peakfilt)
+
+#                         if (sel_vec_cx[i][0]=='contra' and sel_vec_th[j][0]=='non-sel') or (sel_vec_cx[i][0]=='non-sel' and sel_vec_th[j][0]=='contra') :
+#                               counter_contranon+=1
+#                               peaks_contranon.append(peakfilt)
+
+#                         if (sel_vec_cx[i][0]=='non-sel' and sel_vec_th[j][0]=='non-sel'):# or ([sel_vec_cx[i][0]=='non-sel' and sel_vec_th[j][0]]=='contra') :
+#                               counter_nonnon+=1   
+#                               peaks_nonnon.append(peakfilt)
+
+              
+              
+#     contra_peaks = np.array(contra_peaks)
+#     ipsi_peaks = np.array(ipsi_peaks)    
+#     nonsel_peaks = np.array(nonsel_peaks)  
+#     allcounters = [counter_contracontra, counter_ipsiipsi, counter_mixed, counter_contranon, counter_ipsinon, counter_nonnon]
+#     allpeaks =  {'peaks_contracontra':peaks_contracontra, 'peaks_ipsiipsi':peaks_ipsiipsi, 'peaks_mixed':peaks_mixed,'peaks_contranon': peaks_contranon, 'peaks_ipsinon':peaks_ipsinon, 'peaks_nonnon':peaks_nonnon}
+#     return peakindices, ccgwithpeak, allpeaks, peak_sel, allcounters
      
 
 
@@ -148,7 +294,7 @@ def getsparseformat(allspikes):
     returns binarized vectors, to be transformed to a sparse matrix with csr_matrix
     '''
     
-    binsize = 0.001   # 1/100 , 10ms
+    binsize = 0.0005  # 1/2000 , 0.5 ms
     rows_vec=[]
     col_vec=[]
     array_vec=[]
@@ -160,7 +306,7 @@ def getsparseformat(allspikes):
         
 def getsparsematrix(spikes1, spikes2):
     from scipy.sparse import csr_matrix
-    binsize = 0.001    
+    binsize = 0.0005    
     rows_vec, col_vec, array_vec = getsparseformat(spikes1)
     rows_vec_th, col_vec_th, array_vec_th = getsparseformat(spikes2)
     timevec = np.arange(0,max(np.max(array_vec), np.max(array_vec_th)),binsize)
@@ -178,7 +324,7 @@ def cross_corr_sam(sparse, sparse_th):
     N_th = np.shape(datamatrix_th)[1]
     T = np.shape(datamatrix_cx)[0]
 
-    dt = 0.001
+    dt = 0.0005  #0.5ms
     maxlag = 100e-3
     Nlag = int(maxlag/dt)
     #lags = 2*Nlag+1#dt*range(-Nlag, Nlag)

@@ -66,20 +66,20 @@ def Cal_jitter(regions):
                 os.chdir(path+'/'+dir1+'/analysis')
                 print('.')
                 spikes_pooled = {}
-                file0 = regions[0] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
-                file1 = regions[1] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_alloverlappedunits.pkl'
+                file0 = regions[0] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_allunits.pkl'
+                file1 = regions[1] +'_notrials'+'sub-'+str(sub_id)+'_'+str(session)+'_allunits.pkl'
                 if os.path.isfile(file0)==True and os.path.isfile(file1)==True:
                     print('\nsession '+ (sub_id+session)+' crosscorrelation between ' +regions[0]+ ' and '+ regions[1])
                     with open(file0, 'rb') as f:  # open a text file
                         spikes_pooled[regions[0]] = pickle.load(f) # # 
                     with open(file1, 'rb') as f:  # open a text file
                         spikes_pooled[regions[1]] = pickle.load(f)
-                    
-                    spikes_pooled[regions[0]] = jitter(spikes_pooled[regions[0]])
-                    spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]])
+    
+                    spikes_pooled[regions[0]] = jitter(spikes_pooled[regions[0]],20)
+                    spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]],20)
                     sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
                     corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
-                    with open('CCG_25msjitter'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'wb') as f:  # open a text file
+                    with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'wb') as f:  # open a text file
                         pickle.dump(corr_vec, f) # 
                     print('File saved : CCG jitter overlap '+sub_id+session)
                     del corr_vec
@@ -108,7 +108,7 @@ def get_allpeaks(regions,*params):
     ###load parameters
     peak_th, norm, peakstrength, strict_contraipsi = params
     ### crosscorrelation parameters
-    dt = 0.001
+    dt = 0.0005
     maxlag = 100e-3
     Nlag = int(maxlag/dt)
     filt_time = dt*np.arange(-Nlag-1, Nlag)
@@ -131,7 +131,7 @@ def get_allpeaks(regions,*params):
     if alldirectories =='yes':
        directories = os.listdir(path)
     else:
-        directories = ['sub-456772']
+        directories = ['sub-480135']
     for dir1 in directories:
         if not dir1.startswith('.'):
             sessions = gcg.get_sessions(path, dir1)
@@ -150,36 +150,36 @@ def get_allpeaks(regions,*params):
                         spikes_seg[regions[1]] = pickle.load(f) # # 
                     with open('session'+str(session)[4:]+'_sub'+str(sub_id)+'_stats.pkl', 'rb') as f: 
                         stats= pickle.load(f) 
-                    with open('CCG'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'rb') as f:  # open a text file
+                    with open('CCG_Bin_0.5ms_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'rb') as f:  # open a text file
                         corr_vec = pickle.load(f)
+                    with open('CCG_20msjitter'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'rb') as f:  # open a text file
+                        corr_vec_jitter = pickle.load(f)
                     print("load CCG sub"+str(sub_id)+" ses "+str(session)+"complete")
-                    timevec, spikevec_ALM, spikevec_Thal, sel_vec_cx, sel_vec_th, ALM_FR, Thal_FR  = gcg.spikestosel(spikes_seg[regions[0]], spikes_seg[regions[1]], 'all', stats, hemi, 0.05)      
-                    #print(np.shape(corr_vec))
+                    
+                    
+                    timevec, spikevec_ALM, spikevec_Thal, sel_vec_cx, sel_vec_th, ALM_FR, Thal_FR  = gcg.spikestosel(spikes_seg[regions[0]], spikes_seg[regions[1]], 'all', stats, hemi, 0.05)
+                    
                     ccgs_norm = gcg.CCG_norm(corr_vec, filt_time, ALM_FR, Thal_FR, norm)
                     peakindices_alltrials, ccgwithpeak_alltrials, allpeaks_alltrials, peak_sel_alltrials, allcounters_alltrials = gcg.peak_filt(dt, filt_time, ccgs_norm, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,peak_th, 0.015, peakstrength)        
 
                     peak_cx_idx = [subarray[0] for subarray in peakindices_alltrials]
                     peak_thal_idx = [subarray[1] for subarray in peakindices_alltrials]
                     for i in peak_cx_idx:
-                        j=i
-                        if(max(corr_vec[:,i,j])>9):
-                            try:
-                                lags = np.arange(1, len(corr_vec[11:,i,j])) * 0.01
-                                A, tau_c, B = calculate_tau(lags, corr_vec[12:,i,j])
-                                plt.plot(0.01*np.arange(-11, 10),corr_vec[:,i,j])
-                                plt.plot(lags, exponential_decay_with_offset(lags, A, tau_c, B), color='red')
-                                plt.xlim(-0.1,0.1)
-                                plt.title(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j)+" Tau = "+str(tau_c))
-                                plt.figure()
-                                all_A.append(A)
-                                all_B.append(B)
-                                all_tau.append(tau_c)
-                            except (RuntimeError, ValueError) as e:
-                                print("Error during curve fitting:", e)
-                                print("Skipping this fit...")
+                        for j in peak_thal_idx:
+                            if(max(corr_vec[:,i,j])>15):
+                                fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+                                fig.suptitle(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j))
+                                # First bar plot
+                                ax[0].plot(filt_time,corr_vec[:,i,j], color='blue')
+                                ax[0].set_title("Raw CCG")
+                                ax[0].set_xlim(-0.020,0.020)
                                 
-                    break
-                
+                                # Second bar plot
+                                ax[1].plot(filt_time,(corr_vec[:,i,j]-corr_vec_jitter[:,i,j]), color='orange')
+                                ax[1].set_title("JitterCorrected CCG")
+                                ax[1].set_xlim(-0.020,0.020)
+                                # Show the plots
+                                plt.show()
                     # sel_pre, sel_post, efficacy = np.transpose(peak_sel_alltrials)
                     # all_sel_pre = np.hstack([all_sel_pre, sel_pre])
                     # all_sel_post = np.hstack([all_sel_post, sel_post])
@@ -208,7 +208,6 @@ params = [6,"both", "integral", 0 ]#peak_th, norm, peak_strength, strict_contrai
 #all_contrapeaks, all_ipsipeaks, all_nonselpeaks = get_allpeaks(*params)
 
 Cal_jitter(['left ALM', 'left Thalamus'])
-#get_allCCG(['left Thalamus', 'left Thalamus'])
 # all_contrapeaks_L, all_ipsipeaks_L, all_nonselpeaks_L, all_sel_pre, all_sel_post, all_efficacy = get_allpeaks(['left ALM', 'left ALM'], *params)
 '''all_contrapeaks_R, all_ipsipeaks_R, all_nonselpeaks_R = get_allpeaks(['right ALM', 'right ALM'], *params)
 all_contrapeaks = np.hstack([all_contrapeaks_R,all_contrapeaks_L])
@@ -220,7 +219,7 @@ binwidth = 5
 plt.hist(all_contrapeaks, bins=np.arange(min(all_contrapeaks), max(all_contrapeaks) + binwidth, binwidth), color = 'steelblue')    
 plt.hist(all_ipsipeaks, bins=np.arange(min(all_ipsipeaks), max(all_ipsipeaks) + binwidth, binwidth), color='red')
 '''
-# get_allpeaks(['left Thalamus', 'left Thalamus'], *params)
+#get_allpeaks(['left ALM', 'left Thalamus'], *params)
 
 # plt.hist(all_tau,bins=30)
 # plt.hist(all_A,bins=30)
