@@ -29,25 +29,27 @@ def jitter(spike_times_2d, window_size=20):
 
     # Iterate over each row in the 2D array
     for spike_times in spike_times_2d:
-        jittered_spike_times = np.copy(spike_times)
-        jitt = []
-
-        window_times = np.arange(0, max(spike_times), window_size)
-        
-        # Iterate through windows based on spike times
-        for start_time in window_times:
-            end_time = start_time + window_size
-            window_data = jittered_spike_times[(spike_times >= start_time) & (spike_times < end_time)]
+        try:
+            jittered_spike_times = np.copy(spike_times)
+            jitt = []
+         
+            window_times = np.arange(0,max(spike_times), window_size)
             
-            window_data = np.sort(window_data)
-            
-            # Shuffle the window data while ensuring it stays within the window
-            for i in range(len(window_data)):
-                jitt.append(start_time + np.random.uniform(0, window_size))
-        
+            # Iterate through windows based on spike times
+            for start_time in window_times:
+                end_time = start_time + window_size
+                window_data = jittered_spike_times[(spike_times >= start_time) & (spike_times < end_time)]
+                
+                window_data = np.sort(window_data)
+                
+                # Shuffle the window data while ensuring it stays within the window
+                for i in range(len(window_data)):
+                    jitt.append(start_time + np.random.uniform(0, window_size))
+        except Exception as e:
+            jitt = [0]
         # Append the sorted jittered data for this row to the list
-        all_jittered.append(np.array(np.sort(jitt)))
+        all_jittered.append(np.sort(jitt))
 
     # Convert the list of jittered spike times back to a 2D NumPy array
-    return np.array(all_jittered)
+    return all_jittered
 

@@ -154,6 +154,10 @@ def get_allpeaks(regions,*params):
                         corr_vec = pickle.load(f)
                     with open('CCG_20msjitter'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'rb') as f:  # open a text file
                         corr_vec_jitter = pickle.load(f)
+                    with open(regions[0]+'_'+'sub-'+str(sub_id)+'_'+str(session)+'_CCF_Allunits.pkl', 'rb') as f:
+                        reg0_ccf = pickle.load(f)
+                    with open(regions[1]+'_'+'sub-'+str(sub_id)+'_'+str(session)+'_CCF_Allunits.pkl', 'rb') as f:
+                        reg1_ccf = pickle.load(f)
                     print("load CCG sub"+str(sub_id)+" ses "+str(session)+"complete")
                     
                     
@@ -207,7 +211,7 @@ def get_allpeaks(regions,*params):
 params = [6,"both", "integral", 0 ]#peak_th, norm, peak_strength, strict_contraipsi = params
 #all_contrapeaks, all_ipsipeaks, all_nonselpeaks = get_allpeaks(*params)
 
-Cal_jitter(['left ALM', 'left Thalamus'])
+#Cal_jitter(['left ALM', 'left Thalamus'])
 # all_contrapeaks_L, all_ipsipeaks_L, all_nonselpeaks_L, all_sel_pre, all_sel_post, all_efficacy = get_allpeaks(['left ALM', 'left ALM'], *params)
 '''all_contrapeaks_R, all_ipsipeaks_R, all_nonselpeaks_R = get_allpeaks(['right ALM', 'right ALM'], *params)
 all_contrapeaks = np.hstack([all_contrapeaks_R,all_contrapeaks_L])
@@ -219,7 +223,7 @@ binwidth = 5
 plt.hist(all_contrapeaks, bins=np.arange(min(all_contrapeaks), max(all_contrapeaks) + binwidth, binwidth), color = 'steelblue')    
 plt.hist(all_ipsipeaks, bins=np.arange(min(all_ipsipeaks), max(all_ipsipeaks) + binwidth, binwidth), color='red')
 '''
-#get_allpeaks(['left ALM', 'left Thalamus'], *params)
+get_allpeaks(['left ALM', 'left Thalamus'], *params)
 
 # plt.hist(all_tau,bins=30)
 # plt.hist(all_A,bins=30)
