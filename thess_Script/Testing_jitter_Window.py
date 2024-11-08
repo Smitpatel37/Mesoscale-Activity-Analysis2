@@ -144,10 +144,11 @@ for dir1 in directories:
                 
                 ccf_y,ccf_x,ccf_z = zip(*ccfloc1)
                 ccf_y , ccf_x, ccf_z = np.array(ccf_y),np.array(ccf_x),np.array(ccf_z)
-                plt.title('sub-'+str(sub_id)+'_'+str(session)+'total - '+str(len(unit1))+'Idx - '+str(len(idx)))
-                plt.imshow(vox[200,:,:])
-                plt.plot(ccf_y/20,ccf_z/20,marker='*')
-                plt.show()
+                for i in list(np.sort(ccf_x)):
+                    plt.title('sub-'+str(sub_id)+'_'+str(session)+'total - '+str(len(unit1))+'Idx - '+str(len(idx)))
+                    plt.imshow(vox[int(i/20),:,:])
+                    plt.plot(ccf_y/20,ccf_z/20,marker='*')
+                    plt.show()
                 
                 
                 # if os.path.isfile(regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'CCF_overlappedunits100radius_0.25.pkl')==False: 

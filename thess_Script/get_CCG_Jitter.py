@@ -75,16 +75,19 @@ def Cal_jitter(regions):
                     with open(file1, 'rb') as f:  # open a text file
                         spikes_pooled[regions[1]] = pickle.load(f)
     
+                    print(spikes_pooled[regions[0]])
                     spikes_pooled[regions[0]] = jitter(spikes_pooled[regions[0]],20)
-                    spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]],20)
-                    sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
-                    corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
-                    with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'wb') as f:  # open a text file
-                        pickle.dump(corr_vec, f) # 
-                    print('File saved : CCG jitter overlap '+sub_id+session)
-                    del corr_vec
-                else:
-                    print('session '+ (sub_id+session)+' does not have'+regions[0]+ ' and '+ regions[1])
+                    # spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]],20)
+                    
+                    print(spikes_pooled[regions[0]])
+                    # sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
+                    # corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
+                #     with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'wb') as f:  # open a text file
+                #         pickle.dump(corr_vec, f) # 
+                #     print('File saved : CCG jitter overlap '+sub_id+session)
+                #     del corr_vec
+                # else:
+                #     print('session '+ (sub_id+session)+' does not have'+regions[0]+ ' and '+ regions[1])
                     
                     
 def get_allpeaks(regions,*params):
@@ -211,7 +214,7 @@ def get_allpeaks(regions,*params):
 params = [6,"both", "integral", 0 ]#peak_th, norm, peak_strength, strict_contraipsi = params
 #all_contrapeaks, all_ipsipeaks, all_nonselpeaks = get_allpeaks(*params)
 
-#Cal_jitter(['left ALM', 'left Thalamus'])
+Cal_jitter(['left ALM', 'left Thalamus'])
 # all_contrapeaks_L, all_ipsipeaks_L, all_nonselpeaks_L, all_sel_pre, all_sel_post, all_efficacy = get_allpeaks(['left ALM', 'left ALM'], *params)
 '''all_contrapeaks_R, all_ipsipeaks_R, all_nonselpeaks_R = get_allpeaks(['right ALM', 'right ALM'], *params)
 all_contrapeaks = np.hstack([all_contrapeaks_R,all_contrapeaks_L])
@@ -223,7 +226,7 @@ binwidth = 5
 plt.hist(all_contrapeaks, bins=np.arange(min(all_contrapeaks), max(all_contrapeaks) + binwidth, binwidth), color = 'steelblue')    
 plt.hist(all_ipsipeaks, bins=np.arange(min(all_ipsipeaks), max(all_ipsipeaks) + binwidth, binwidth), color='red')
 '''
-get_allpeaks(['left ALM', 'left Thalamus'], *params)
+#get_allpeaks(['left ALM', 'left Thalamus'], *params)
 
 # plt.hist(all_tau,bins=30)
 # plt.hist(all_A,bins=30)
