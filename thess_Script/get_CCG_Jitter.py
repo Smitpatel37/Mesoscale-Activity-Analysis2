@@ -75,16 +75,19 @@ def Cal_jitter(regions):
                     with open(file1, 'rb') as f:  # open a text file
                         spikes_pooled[regions[1]] = pickle.load(f)
     
+                    print(spikes_pooled[regions[0]])
                     spikes_pooled[regions[0]] = jitter(spikes_pooled[regions[0]],20)
-                    spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]],20)
-                    sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
-                    corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
-                    with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'wb') as f:  # open a text file
-                        pickle.dump(corr_vec, f) # 
-                    print('File saved : CCG jitter overlap '+sub_id+session)
-                    del corr_vec
-                else:
-                    print('session '+ (sub_id+session)+' does not have'+regions[0]+ ' and '+ regions[1])
+                    # spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]],20)
+                    
+                    print(spikes_pooled[regions[0]])
+                    # sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
+                    # corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
+                #     with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'wb') as f:  # open a text file
+                #         pickle.dump(corr_vec, f) # 
+                #     print('File saved : CCG jitter overlap '+sub_id+session)
+                #     del corr_vec
+                # else:
+                #     print('session '+ (sub_id+session)+' does not have'+regions[0]+ ' and '+ regions[1])
                     
                     
 def get_allpeaks(regions,*params):
@@ -154,6 +157,10 @@ def get_allpeaks(regions,*params):
                         corr_vec = pickle.load(f)
                     with open('CCG_20msjitter'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'overlapped.pkl', 'rb') as f:  # open a text file
                         corr_vec_jitter = pickle.load(f)
+                    with open(regions[0]+'_'+'sub-'+str(sub_id)+'_'+str(session)+'_CCF_Allunits.pkl', 'rb') as f:
+                        reg0_ccf = pickle.load(f)
+                    with open(regions[1]+'_'+'sub-'+str(sub_id)+'_'+str(session)+'_CCF_Allunits.pkl', 'rb') as f:
+                        reg1_ccf = pickle.load(f)
                     print("load CCG sub"+str(sub_id)+" ses "+str(session)+"complete")
                     
                     
