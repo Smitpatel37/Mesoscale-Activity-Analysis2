@@ -31,8 +31,13 @@ def jitter(spike_times_2d, window_size):
     for spike_times in spike_times_2d:
         jittered_spike_times = np.copy(spike_times)
         jitt = []
+        
+        try:
+            maxi = np.max(spike_times)
+        except:
+            maxi = window_size
      
-        window_times = np.arange(0,spike_times[-1], window_size)
+        window_times = np.arange(0,maxi, window_size)
         
         # Iterate through windows based on spike times
         for start_time in window_times:

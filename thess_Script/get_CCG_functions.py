@@ -129,7 +129,7 @@ def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,CCF_allregion
                         elif peakstrength=="integral":
                             peakfilt = integral#integral#peakfilt#[peakfilt,filt_time[argpeak]]
                         #peakindices.append([i,j,sel_vec_cx[i], sel_vec_th[j], listcx[i], listth[j], peakfilt,filt_time[argpeak] , ALM_FR[i], Thal_FR[j]])
-                        peakindices.append([listcx[i][0], listth[j][0]])
+                        peakindices.append([i,j,listcx[i][0], listth[j][0]])
                         CCF.append([listcx[i][1], listth[j][1]])
                         all_sessions.append(session)
 
@@ -165,6 +165,8 @@ def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,CCF_allregion
     allcounters = [counter_contracontra, counter_ipsiipsi, counter_mixed, counter_contranon, counter_ipsinon, counter_nonnon]
     allpeaks =  {'peaks_contracontra':peaks_contracontra, 'peaks_ipsiipsi':peaks_ipsiipsi, 'peaks_mixed':peaks_mixed,'peaks_contranon': peaks_contranon, 'peaks_ipsinon':peaks_ipsinon, 'peaks_nonnon':peaks_nonnon}
     return peakindices, CCF, ccgwithpeak, allpeaks, peak_sel, allcounters, all_sessions
+
+
 # def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,std_th, time_th, peakstrength):
 #     '''
     
