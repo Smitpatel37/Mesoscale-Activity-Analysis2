@@ -62,7 +62,7 @@ def get_allpeaks(regions,*params):
     #### load data
     path = 'D:/Mesoscale-Activity-Analysis/NWBdata/'
     os.chdir(path)
-    alldirectories = 'no'
+    alldirectories = 'yes'
     if alldirectories =='yes':
         directories = os.listdir(path)
     else:
@@ -119,13 +119,13 @@ def get_allpeaks(regions,*params):
                                 ax[0].plot(filt_time,corr_vec[:,i,j], color='blue')
                                 ax[0].set_title("Raw CCG")
                                 ax[0].set_xlabel("Time (ms)")
-                                ax[0].set_xlim(-0.020,0.020)
+                                ax[0].set_xlim(-0.025,0.025)
                                 
                                 # Second bar plot
                                 ax[1].plot(filt_time,(corr_vec[:,i,j]-corr_vec_jitter[:,i,j]), color='orange')
-                                ax[1].set_xlabel("JitterCorrected CCG")
-                                ax[0].set_xlabel("Time (ms)")
-                                ax[1].set_xlim(-0.020,0.020)
+                                ax[1].set_title("JitterCorrected CCG")
+                                ax[1].set_xlabel("Time (ms)")
+                                ax[1].set_xlim(-0.025,0.025)
                                 # Show the plots
                                 plt.show()
                                 

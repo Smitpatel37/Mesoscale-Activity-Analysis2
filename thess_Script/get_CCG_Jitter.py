@@ -78,6 +78,7 @@ def Cal_jitter(regions):
                     spikes_pooled[regions[0]] = jitter(spikes_pooled[regions[0]],0.020)
                     spikes_pooled[regions[1]] = jitter(spikes_pooled[regions[1]],0.020)
                     print()
+                    print(np.shape(spikes_pooled[regions[0]]))
                     sparse1, sparse2 = gcg.getsparsematrix(spikes_pooled[regions[0]], spikes_pooled[regions[1]])
                     corr_vec, filt_time, ALM_FR, Thal_FR = gcg.cross_corr_sam(sparse1, sparse2)
                     with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'wb') as f:  # open a text file
