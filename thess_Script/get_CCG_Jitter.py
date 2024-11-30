@@ -125,15 +125,16 @@ def get_allpeaks(regions,*params):
     all_tau = []
     all_A = []
     all_B = []
-
+    perCCGpeak = []
+    perover=[]
     #### load data
     path = 'D:/Mesoscale-Activity-Analysis/NWBdata/'
     os.chdir(path)
-    alldirectories = 'no'
+    alldirectories = 'yes'
     if alldirectories =='yes':
         directories = os.listdir(path)
     else:
-        directories = ['sub-480135']
+        directories = ['sub-455219']
     for dir1 in directories:
         if not dir1.startswith('.'):
             sessions = gcg.get_sessions(path, dir1)
@@ -154,39 +155,77 @@ def get_allpeaks(regions,*params):
                         stats= pickle.load(f) 
                     with open('CCG_Bin_0.5ms_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'rb') as f:  # open a text file
                         corr_vec = pickle.load(f)
-                    with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'rb') as f:  # open a text file
-                        corr_vec_jitter = pickle.load(f)
+                    # with open('CCG_20msjitter_'+regions[0]+'-'+regions[1]+'sub-'+str(sub_id)+'_'+str(session)+'allunits.pkl', 'rb') as f:  # open a text file
+                    #     corr_vec_jitter = pickle.load(f)
                     with open(regions[0]+'_'+'sub-'+str(sub_id)+'_'+str(session)+'_CCF_Allunits.pkl', 'rb') as f:
                         reg0_ccf = pickle.load(f)
                     with open(regions[1]+'_'+'sub-'+str(sub_id)+'_'+str(session)+'_CCF_Allunits.pkl', 'rb') as f:
                         reg1_ccf = pickle.load(f)
                     print("load CCG sub"+str(sub_id)+" ses "+str(session)+"complete")
-                    
-                    
+                    with open(regions[1]+''+'sub-'+str(sub_id)+'_'+str(session)+'CCF_overlappedunits100radius_0.25.pkl', 'rb') as f:
+                        over_thal = pickle.load(f)
+                        
+                    CCF_allregions0 = gcg.unzip_CCF(reg0_ccf)
+                    CCF_allregions1 = gcg.unzip_CCF(reg1_ccf)
                     timevec, spikevec_ALM, spikevec_Thal, sel_vec_cx, sel_vec_th, ALM_FR, Thal_FR  = gcg.spikestosel(spikes_seg[regions[0]], spikes_seg[regions[1]], 'all', stats, hemi, 0.05)
                     
                     ccgs_norm = gcg.CCG_norm(corr_vec, filt_time, ALM_FR, Thal_FR, norm)
-                    peakindices_alltrials, ccgwithpeak_alltrials, allpeaks_alltrials, peak_sel_alltrials, allcounters_alltrials = gcg.peak_filt(dt, filt_time, ccgs_norm, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,peak_th, 0.015, peakstrength)        
-
+                    peakindices_alltrials, CCF, ccgwithpeak_alltrials, allpeaks_alltrials, peak_sel_alltrials, allcounters_alltrials,allsession = gcg.peak_filt(dt, filt_time, ccgs_norm, sel_vec_cx, sel_vec_th, CCF_allregions0, CCF_allregions1, ALM_FR, Thal_FR,peak_th,session, 0.015, peakstrength)        
+                    
+                    # print(peakindices_alltrials)
                     peak_cx_idx = [subarray[0] for subarray in peakindices_alltrials]
                     peak_thal_idx = [subarray[1] for subarray in peakindices_alltrials]
-                    for i in peak_cx_idx:
-                        for j in peak_thal_idx:
-                            if(max(corr_vec[:,i,j])>15):
-                                fig, ax = plt.subplots(1, 2, figsize=(12, 5))
-                                fig.suptitle(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j))
-                                # First bar plot
-                                ax[0].plot(filt_time,corr_vec[:,i,j], color='blue')
-                                ax[0].set_title("Raw CCG")
-                                ax[0].set_xlabel("Time (ms)")
-                                ax[0].set_xlim(-0.020,0.020)
+                    cx_unit = [subarray[2] for subarray in peakindices_alltrials]
+                    thal_unit = [subarray[3] for subarray in peakindices_alltrials]
+                    unit_reg0 = {peak_cx_idx[i]: cx_unit[i] for i in range(len(peak_cx_idx))}
+                    unit_reg1 = {peak_thal_idx[i]: thal_unit[i] for i in range(len(peak_thal_idx))}
+                    
+                    perCCGpeak.append(100*(len(peak_cx_idx)*len(peak_thal_idx))/(corr_vec.shape[1]*corr_vec.shape[2]))
+                    perover.append(100*len(over_thal)/len(spikes_seg[regions[1]]))
+                    
+                    
+                    # for i in peak_cx_idx:
+                    #     for j in peak_thal_idx:
+                    #         if(max(corr_vec[:,i,j])>15):
+                    #             fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+                    #             fig.suptitle(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j))
+                    #             # First bar plot
+                    #             ax[0].plot(filt_time,corr_vec[:,i,j], color='blue')
+                    #             ax[0].set_title("Raw CCG")
+                    #             ax[0].set_xlabel("Time (ms)")
+                    #             ax[0].set_xlim(-0.020,0.020)
+                               
+                    #             # Second bar plot
+                    #             ax[1].plot(filt_time,(corr_vec[:,i,j]-corr_vec_jitter[:,i,j]), color='orange')
+                    #             ax[1].set_xlabel("JitterCorrected CCG 20ms")
+                    #             ax[1].set_xlim(-0.020,0.020)
+                    #             # Show the plots
+                    #             plt.show()
                                 
-                                # Second bar plot
-                                ax[1].plot(filt_time,(corr_vec[:,i,j]-corr_vec_jitter[:,i,j]), color='orange')
-                                ax[1].set_xlabel("JitterCorrected CCG 20ms")
-                                ax[1].set_xlim(-0.020,0.020)
-                                # Show the plots
-                                plt.show()
+                    # spikevec_Thal, sel_vec_cx, sel_vec_th, ALM_FR, Thal_FR  = gcg.spikestosel(spikes_seg[regions[0]], spikes_seg[regions[1]], 'all', stats, hemi, 0.05)
+                    
+                    # ccgs_norm = gcg.CCG_norm(corr_vec, filt_time, ALM_FR, Thal_FR, norm)
+                    # peakindices_alltrials, ccgwithpeak_alltrials, allpeaks_alltrials, peak_sel_alltrials, allcounters_alltrials = gcg.peak_filt(dt, filt_time, ccgs_norm, sel_vec_cx, sel_vec_th,ALM_FR, Thal_FR,peak_th, 0.015, peakstrength)        
+
+                    # peak_cx_idx = [subarray[0] for subarray in peakindices_alltrials]
+                    # peak_thal_idx = [subarray[1] for subarray in peakindices_alltrials]
+                    # for i in peak_cx_idx:
+                    #     for j in peak_thal_idx:
+                    #         if(max(corr_vec[:,i,j])>15):
+                    #             fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+                    #             fig.suptitle(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(i)+" -"+str(regions[1])+" "+str(j))
+                    #             # First bar plot
+                    #             ax[0].plot(filt_time,corr_vec[:,i,j], color='blue')
+                    #             ax[0].set_title("Raw CCG")
+                    #             ax[0].set_xlabel("Time (ms)")
+                    #             ax[0].set_xlim(-0.020,0.020)
+                                
+                    #             # Second bar plot
+                    #             ax[1].plot(filt_time,(corr_vec[:,i,j]-corr_vec_jitter[:,i,j]), color='orange')
+                    #             ax[1].set_xlabel("JitterCorrected CCG 20ms")
+                    #             ax[1].set_xlim(-0.020,0.020)
+                    #             # Show the plots
+                    #             plt.show()
                     # sel_pre, sel_post, efficacy = np.transpose(peak_sel_alltrials)
                     # all_sel_pre = np.hstack([all_sel_pre, sel_pre])
                     # all_sel_post = np.hstack([all_sel_post, sel_post])
@@ -195,6 +234,7 @@ def get_allpeaks(regions,*params):
                     # ipsi_peaks = allpeaks_alltrials['peaks_ipsiipsi'] + strict_contraipsi*allpeaks_alltrials['peaks_ipsinon']
                     # all_contrapeaks = np.hstack([all_contrapeaks, contra_peaks])
                     # all_ipsipeaks = np.hstack([all_ipsipeaks, ipsi_peaks])
+    return corr_vec,perCCGpeak,perover
     # plt.figure()
     # sns.kdeplot(all_contrapeaks, fill = 'True', color = 'steelblue').set(xlim=0)     
     # sns.kdeplot(all_ipsipeaks, fill = 'True', color = 'red').set(xlim=0)
@@ -226,8 +266,25 @@ binwidth = 5
 plt.hist(all_contrapeaks, bins=np.arange(min(all_contrapeaks), max(all_contrapeaks) + binwidth, binwidth), color = 'steelblue')    
 plt.hist(all_ipsipeaks, bins=np.arange(min(all_ipsipeaks), max(all_ipsipeaks) + binwidth, binwidth), color='red')
 '''
-get_allpeaks(['left ALM', 'left Thalamus'], *params)
+corr,rCCG,rOver = get_allpeaks(['left ALM', 'left Thalamus'], *params)
 
+plt.figure(figsize=(8, 6))
+plt.scatter(rCCG, rOver, marker='o', linestyle='-', color='b')
+
+# Add title and labels
+plt.title("Percentage of Peaks vs. Neuron Overlap with ALM Projection Zones", fontsize=14, fontweight='bold')
+plt.ylabel("Percentage of Neurons Overlapping with ALM Projection Zone", fontsize=12)
+plt.xlabel("Percentage of Significant Peaks in Total CCGs", fontsize=12)
+
+# Customize the plot
+plt.grid(alpha=0.3)
+plt.xticks(fontsize=10)
+plt.yticks(fontsize=10)
+plt.legend(fontsize=10)
+
+# Show the plot
+plt.tight_layout()
+plt.show()
 # plt.hist(all_tau,bins=30)
 # plt.hist(all_A,bins=30)
 # plt.hist(all_B,bins=30)

@@ -19,15 +19,6 @@ import get_CCG_functions as gcg
 from jitter import jitter
 
 
-def unzip_CCF(rg_ccf):
-    ccfloc1,unit1 = zip(*rg_ccf)
-    x,y,z = zip(*ccfloc1)
-    result = []
-    for i in range(len(unit1)):  # Loop over indices
-        combined_list = [x[i], y[i], z[i]]  # Combine elements from x, y, and z
-        result.append([ unit1[i], combined_list ]) 
-    return result
-
 def get_allpeaks(regions,*params):
     '''
     Calculates the peaks of the crosscorrelation function
@@ -66,7 +57,7 @@ def get_allpeaks(regions,*params):
     if alldirectories =='yes':
         directories = os.listdir(path)
     else:
-        directories = ['sub-480135']
+        directories = ['sub-456772']
     for dir1 in directories:
         if not dir1.startswith('.'):
             sessions = gcg.get_sessions(path, dir1)
@@ -95,14 +86,14 @@ def get_allpeaks(regions,*params):
                         reg1_ccf = pickle.load(f)
                     print("load CCG sub"+str(sub_id)+" ses "+str(session)+"complete")
                     
-                    CCF_allregions0 = unzip_CCF(reg0_ccf)
-                    CCF_allregions1 = unzip_CCF(reg1_ccf)
+                    CCF_allregions0 = gcg.unzip_CCF(reg0_ccf)
+                    CCF_allregions1 = gcg.unzip_CCF(reg1_ccf)
                     timevec, spikevec_ALM, spikevec_Thal, sel_vec_cx, sel_vec_th, ALM_FR, Thal_FR  = gcg.spikestosel(spikes_seg[regions[0]], spikes_seg[regions[1]], 'all', stats, hemi, 0.05)
                     
                     ccgs_norm = gcg.CCG_norm(corr_vec, filt_time, ALM_FR, Thal_FR, norm)
                     peakindices_alltrials, CCF, ccgwithpeak_alltrials, allpeaks_alltrials, peak_sel_alltrials, allcounters_alltrials,allsession = gcg.peak_filt(dt, filt_time, ccgs_norm, sel_vec_cx, sel_vec_th, CCF_allregions0, CCF_allregions1, ALM_FR, Thal_FR,peak_th,session, 0.015, peakstrength)        
 
-                    print(peakindices_alltrials)
+                    # print(peakindices_alltrials)
                     peak_cx_idx = [subarray[0] for subarray in peakindices_alltrials]
                     peak_thal_idx = [subarray[1] for subarray in peakindices_alltrials]
                     cx_unit = [subarray[2] for subarray in peakindices_alltrials]
@@ -113,21 +104,28 @@ def get_allpeaks(regions,*params):
                     for i in peak_cx_idx:
                         for j in peak_thal_idx:
                             if(max(corr_vec[:,i,j])>15):
-                                fig, ax = plt.subplots(1, 2, figsize=(12, 5))
-                                fig.suptitle(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(unit_reg0[i])+" -"+str(regions[1])+" "+str(unit_reg1[j]))
-                                # First bar plot
-                                ax[0].plot(filt_time,corr_vec[:,i,j], color='blue')
-                                ax[0].set_title("Raw CCG")
-                                ax[0].set_xlabel("Time (ms)")
-                                ax[0].set_xlim(-0.025,0.025)
                                 
-                                # Second bar plot
-                                ax[1].plot(filt_time,(corr_vec[:,i,j]-corr_vec_jitter[:,i,j]), color='orange')
-                                ax[1].set_title("JitterCorrected CCG")
-                                ax[1].set_xlabel("Time (ms)")
-                                ax[1].set_xlim(-0.025,0.025)
-                                # Show the plots
+                                plt.plot(filt_time,corr_vec[:,i,j])
+                                plt.title(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(unit_reg0[i])+" -"+str(regions[1])+" "+str(unit_reg1[j]))
+                                plt.xlim(-0.02,0.02)
+                                plt.xlabel("Time (ms)")
+                                plt.ylabel("Raw CCG")
                                 plt.show()
+                                # fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+                                # fig.suptitle(str(sub_id)+'_'+str(session)+" "+str(regions[0])+" "+str(unit_reg0[i])+" -"+str(regions[1])+" "+str(unit_reg1[j]))
+                                # # First bar plot
+                                # ax[0].plot(filt_time,corr_vec[:,i,j], color='blue')
+                                # ax[0].set_title("Raw CCG")
+                                # ax[0].set_xlabel("Time (ms)")
+                                # ax[0].set_xlim(-0.02,0.02)
+                                
+                                # # Second bar plot
+                                # ax[1].plot(filt_time,(corr_vec[:,i,j]-corr_vec_jitter[:,i,j]), color='orange')
+                                # ax[1].set_title("JitterCorrected CCG")
+                                # ax[1].set_xlabel("Time (ms)")
+                                # ax[1].set_xlim(-0.02,0.02)
+                                # # Show the plots
+                                # plt.show()
                                 
                         
 params = [6,"both", "integral", 0 ]

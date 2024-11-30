@@ -31,6 +31,14 @@ def get_sessions(path, dir1):
             sessions +=[session_id]
     return sessions
 
+def unzip_CCF(rg_ccf):
+    ccfloc1,unit1 = zip(*rg_ccf)
+    x,y,z = zip(*ccfloc1)
+    result = []
+    for i in range(len(unit1)):  # Loop over indices
+        combined_list = [x[i], y[i], z[i]]  # Combine elements from x, y, and z
+        result.append([ unit1[i], combined_list ]) 
+    return result
 
 def peak_filt(binsize, filt_time, filt_vec, sel_vec_cx, sel_vec_th,CCF_allregions0, CCF_allregions1, ALM_FR, Thal_FR,std_th, session, time_th, peakstrength):
     '''
@@ -353,9 +361,9 @@ def cross_corr_sam(sparse, sparse_th):
         #print('Mshift', np.shape(Mshift))
         #print(np.shape( Mvalid.T*(Mshift) ))
         #ccgs.append(Mvalid.T*(Mshift)) #### sparse?
-        product = (Mvalid.T*(Mshift)).toarray()
+        product = (Mvalid.T*(Mshift))      
         #print (type(product))
-        ccgs[ilag,:, :]  = product
+        ccgs[ilag,:, :]  = product.toarray()
         #return ccgs
     filt_time = dt*np.arange(-Nlag-1, Nlag)
     duration = (time.time()-start )
@@ -412,6 +420,22 @@ def rate_fromspikes(times, trials, delta, unit_index, allunits_new):
     return rate
 
 
+def spikestoCCG(unitsALM, unitsThal, alpha):
+
+    papersamplingfreq = 30e3 #### 30khz from paper
+    samplingfreq = 4e3# 
+    binsize = 0.01#1/samplingfreq
+    timevec, spikevec_ALM = spiketobinary(binsize, unitsALM)
+    print('ALM spike to binary done')
+    timevec, spikevec_Thal = spiketobinary(binsize, unitsThal)
+    print('Thal spike to binary done')
+    interval = (timevec>-0.5)*(timevec<0.5)#timevec>-3 #(timevec>-1.2)*(timevec<0)
+    spikemeansALM = np.mean(spikevec_ALM[:,:,interval], axis=2)/binsize
+    spikemeansThal = np.mean(spikevec_Thal[:,:,interval], axis=2)/binsize
+    ALM_FR = np.mean(spikemeansALM, axis=0)#/binsize
+    Thal_FR = np.mean(spikemeansThal, axis=0)
+    return spikevec_ALM,spikevec_Thal,ALM_FR,Thal_FR
+    
 def spikestosel (unitsALM, unitsThal, epoch, stats,hemi, alpha):
     papersamplingfreq = 30e3 #### 30khz from paper
     samplingfreq = 4e3# 
